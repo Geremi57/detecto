@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 
+from app.database import Base, engine
 from app.routes import detect, history
+
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Detecto API",
