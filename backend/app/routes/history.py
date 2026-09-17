@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.record import DetectionRecord
+from app.models.record import DetectionHistory, DetectionRecord
 
 router = APIRouter(prefix="/history", tags=["History"])
 

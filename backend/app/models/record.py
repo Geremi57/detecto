@@ -7,6 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.database import Base
 
 
+
 class DetectionRecord(Base):
     __tablename__ = "detection_records"
 
@@ -53,13 +54,12 @@ class DetectionResult(BaseModel):
     detections: list[Detection]
     timestamp: datetime
 
-
 class DetectionHistory(BaseModel):
     id: int
     timestamp: datetime
-    count: int
-    average_confidence: float
-    inference_time_ms: float
+    count: int = Field(ge=0)
+    average_confidence: float = Field(ge=0, le=1)
+    inference_time_ms: float = Field(ge=0)
 
     class Config:
         from_attributes = True
