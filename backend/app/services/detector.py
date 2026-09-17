@@ -59,3 +59,5 @@ class PersonDetector:
             "inference_time_ms": round(inference_time, 2),
             "detections": detections,
         }
+
+detector = PersonDetector()
