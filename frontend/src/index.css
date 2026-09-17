@@ -1,3 +1,184 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    --color-bg: #0B131F;
+    --color-accent: #00FF88;
+  }
+
+  * {
+    @apply border-detecto-border;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-detecto-bg text-detecto-text font-sans antialiased;
+    background-image: var(--grid-pattern);
+    background-size: 40px 40px;
+  }
+
+  ::selection {
+    @apply bg-detecto-accent/30 text-detecto-text;
+  }
+
+  ::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-detecto-bgSecondary;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-detecto-border rounded-full hover:bg-detecto-textDim;
+  }
+
+  ::-webkit-scrollbar-corner {
+    @apply bg-detecto-bg;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-detecto-bgCard border border-detecto-border rounded-xl;
+  }
+
+  .card-hover {
+    @apply card transition-all duration-300 hover:border-detecto-accent/50 hover:shadow-glow-sm;
+  }
+
+  .btn-primary {
+    @apply px-4 py-2 bg-detecto-accent text-detecto-bg font-medium rounded-lg transition-all duration-200 hover:shadow-glow hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-detecto-accent/50;
+  }
+
+  .btn-secondary {
+    @apply px-4 py-2 bg-detecto-bgSecondary border border-detecto-border text-detecto-text font-medium rounded-lg transition-all duration-200 hover:border-detecto-accent/50 hover:bg-detecto-accentDim focus:outline-none focus:ring-2 focus:ring-detecto-accent/50;
+  }
+
+  .btn-ghost {
+    @apply px-3 py-1.5 text-detecto-textMuted font-medium rounded-lg transition-all duration-200 hover:text-detecto-accent hover:bg-detecto-accentDim focus:outline-none focus:ring-2 focus:ring-detecto-accent/50;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-2 bg-detecto-bgSecondary border border-detecto-border text-detecto-text rounded-lg placeholder-detecto-textDim transition-all duration-200 focus:border-detecto-accent focus:outline-none focus:ring-2 focus:ring-detecto-accent/20;
+  }
+
+  .metric-card {
+    @apply card p-4 flex flex-col items-center text-center;
+  }
+
+  .metric-value {
+    @apply text-3xl font-mono font-medium text-detecto-accent;
+  }
+
+  .metric-label {
+    @apply text-xs text-detecto-textMuted uppercase tracking-wider mt-1;
+  }
+
+  .status-dot {
+    @apply w-2 h-2 rounded-full;
+  }
+
+  .status-dot--active {
+    @apply bg-detecto-accent shadow-[0_0_8px_#00FF88];
+    animation: pulse 2s infinite;
+  }
+
+  .status-dot--inactive {
+    @apply bg-detecto-danger;
+  }
+
+  .glass-panel {
+    @apply bg-detecto-bgCard/80 backdrop-blur-xl border border-detecto-border/50;
+  }
+
+  .sidebar-item {
+    @apply w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 text-detecto-textMuted hover:text-detecto-accent hover:bg-detecto-accentDim;
+  }
+
+  .sidebar-item--active {
+    @apply text-detecto-bg bg-detecto-accent shadow-glow-sm;
+  }
+
+  .chart-container {
+    @apply card p-4;
+  }
+
+  .section-title {
+    @apply text-sm font-medium text-detecto-textMuted uppercase tracking-wider mb-3;
+  }
+}
+
+@layer utilities {
+  .animate-pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.4s ease-out;
+  }
+
+  .text-gradient {
+    @apply bg-gradient-to-r from-detecto-accent to-detecto-info bg-clip-text text-transparent;
+  }
+
+  .border-glow {
+    @apply border-detecto-accent/50 shadow-glow-sm;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+.scanline-overlay::after {
+  content: '';
+  @apply absolute inset-0 pointer-events-none;
+  background: linear-gradient(180deg, transparent 50%, rgba(0, 255, 136, 0.02) 50%);
+  background-size: 100% 4px;
+  animation: scanline 8s linear infinite;
+}
+
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-detecto-accent/50 focus:ring-offset-2 focus:ring-offset-detecto-bg;
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
