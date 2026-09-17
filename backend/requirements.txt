@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+python-multipart
+ultralytics
+opencv-python
+pillow
+numpy
+python-dotenv
+sqlalchemy
+pytest
+httpx
