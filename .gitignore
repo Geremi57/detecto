@@ -3,3 +3,4 @@ app/__pycache__/
 *.py[cod]
 backend/.env
 backend/.pytest_cache/
+.commitas.sh
