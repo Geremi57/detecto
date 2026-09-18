@@ -13,6 +13,11 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.record import DetectionRecord
 
+import base64
+from io import BytesIO
+
+from app.utils.preprocessing import draw_detections
+
 router = APIRouter(
     prefix="/detect",
     tags=["Detection"],
@@ -63,6 +68,18 @@ async def detect_people(
 
     result = detector.detect(image)
 
+    annotated_image = draw_detections(
+    image,
+    result["detections"],
+)
+
+    buffer = BytesIO()
+    annotated_image.save(buffer, format="JPEG")
+
+    encoded_image = base64.b64encode(
+        buffer.getvalue()
+    ).decode("utf-8")
+
     record = DetectionRecord(
         timestamp=datetime.now(timezone.utc),
         count=result["count"],
@@ -74,9 +91,10 @@ async def detect_people(
     db.commit()
 
     return DetectionResult(
-       filename=file.filename,
+        filename=file.filename,
         timestamp=datetime.now(timezone.utc),
         image_width=image_width,
         image_height=image_height,
+        annotated_image=f"data:image/jpeg;base64,{encoded_image}",
         **result,
     )

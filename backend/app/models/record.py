@@ -56,6 +56,7 @@ class DetectionResult(BaseModel):
 
     image_width: int = Field(gt=0)
     image_height: int = Field(gt=0)
+    annotated_image: str | None = None
 
 class DetectionHistory(BaseModel):
     id: int
