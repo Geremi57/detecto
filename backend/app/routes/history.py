@@ -42,3 +42,11 @@ def reset_history(db: Session = Depends(get_db)):
     db.commit()
 
     return {"message": "Detection history cleared"}
+
+
+@router.delete("/reset")
+def reset_detection_history(db: Session = Depends(get_db)):
+    db.query(DetectionRecord).delete()
+    db.commit()
+
+    return {"message": "Detection history reset"}
