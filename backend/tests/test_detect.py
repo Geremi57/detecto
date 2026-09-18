@@ -179,3 +179,25 @@ def test_detect_returns_annotated_image():
     decoded = base64.b64decode(encoded)
 
     assert len(decoded) > 0
+
+
+    def test_detect_handles_detection_failure():
+        image = create_test_image()
+
+        with patch(
+            "app.routes.detect.detector.detect",
+            side_effect=RuntimeError("YOLO failed"),
+        ):
+            response = client.post(
+                "/detect",
+                files={
+                    "file": (
+                        "test.jpg",
+                        image.getvalue(),
+                        "image/jpeg",
+                    )
+                },
+            )
+
+        assert response.status_code == 500
+        assert response.json()["detail"] == "Person detection failed."
