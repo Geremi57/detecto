@@ -8,4 +8,4 @@ numpy
 python-dotenv
 sqlalchemy
 pytest
-httpx
+httpx2
