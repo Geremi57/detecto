@@ -5,6 +5,8 @@ from PIL import Image
 
 from app.main import app
 
+import base64
+
 from unittest.mock import patch
 
 from app.database import SessionLocal
@@ -132,3 +134,48 @@ def test_detect_saves_result_to_history():
     db.delete(record)
     db.commit()
     db.close()
+
+
+def test_detect_returns_annotated_image():
+    mock_result = {
+        "count": 1,
+        "average_confidence": 0.95,
+        "inference_time_ms": 100.0,
+        "detections": [
+            {
+                "x1": 10.0,
+                "y1": 10.0,
+                "x2": 50.0,
+                "y2": 50.0,
+                "confidence": 0.95,
+            }
+        ],
+    }
+
+    image = create_test_image()
+
+    with patch(
+        "app.routes.detect.detector.detect",
+        return_value=mock_result,
+    ):
+        response = client.post(
+            "/detect",
+            files={
+                "file": (
+                    "test.jpg",
+                    image.getvalue(),
+                    "image/jpeg",
+                )
+            },
+        )
+
+    assert response.status_code == 200
+
+    annotated_image = response.json()["annotated_image"]
+
+    assert annotated_image.startswith("data:image/jpeg;base64,")
+
+    encoded = annotated_image.split(",", 1)[1]
+    decoded = base64.b64decode(encoded)
+
+    assert len(decoded) > 0
