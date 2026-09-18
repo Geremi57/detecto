@@ -54,6 +54,9 @@ class DetectionResult(BaseModel):
     detections: list[Detection]
     timestamp: datetime
 
+    image_width: int = Field(gt=0)
+    image_height: int = Field(gt=0)
+
 class DetectionHistory(BaseModel):
     id: int
     timestamp: datetime
@@ -62,3 +65,4 @@ class DetectionHistory(BaseModel):
     inference_time_ms: float = Field(ge=0)
 
     model_config = ConfigDict(from_attributes=True)
+    
