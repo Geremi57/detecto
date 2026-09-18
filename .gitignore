@@ -3,5 +3,7 @@ app/__pycache__/
 *.py[cod]
 backend/.env
 backend/.pytest_cache/
+# YOLO model weights (downloaded at runtime via MODEL_PATH)
+backend/*.pt
 .commitas.sh
 detecto.db
