@@ -59,3 +59,18 @@ def test_detection_record_can_be_persisted():
     db.delete(record)
     db.commit()
     db.close()
+
+def test_get_history_rejects_invalid_date():
+    response = client.get(
+        "/history?start=not-a-date"
+    )
+
+    assert response.status_code == 422
+
+
+def test_get_history_rejects_negative_offset():
+    response = client.get(
+        "/history?offset=-1"
+    )
+
+    assert response.status_code == 422
