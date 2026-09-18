@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { detectImage, blobToFile } from '../lib/api'
+import { convertToUploadableImage } from '../lib/mediaFormats'
 
 const DEFAULT_INTERVAL_MS = 1000 // sample one frame per second
 
@@ -134,7 +135,10 @@ export function useDetectionLoop({ intervalMs = DEFAULT_INTERVAL_MS, onHistoryCh
     setRunning(true)
 
     try {
-      const response = await detectImage(file, controller.signal)
+      // The backend only accepts JPEG/PNG — convert other supported formats
+      // (WebP, GIF, BMP, AVIF, ...) to JPEG client-side before uploading.
+      const uploadable = await convertToUploadableImage(file)
+      const response = await detectImage(uploadable, controller.signal)
       applyResponse(response, epoch)
     } catch (err) {
       if (err.name !== 'AbortError') {

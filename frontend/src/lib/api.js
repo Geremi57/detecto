@@ -19,7 +19,9 @@ async function request(path, options = {}) {
 }
 
 /**
- * Run person detection on an uploaded image (JPEG/PNG).
+ * Run person detection on an uploaded image.
+ * The backend endpoint only accepts JPEG/PNG — use convertToUploadableImage()
+ * (lib/mediaFormats.js) first for any other format.
  * Returns { filename, count, average_confidence, inference_time_ms, detections, timestamp, image_width, image_height, annotated_image }
  */
 export async function detectImage(file, signal) {

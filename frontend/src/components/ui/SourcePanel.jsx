@@ -1,9 +1,10 @@
 import { useRef, useState, useCallback } from 'react'
 import { Image as ImageIcon, Film, Radio, Upload, X } from 'lucide-react'
+import { IMAGE_ACCEPT, VIDEO_ACCEPT, isImageFile, isVideoFile } from '../../lib/mediaFormats'
 
 const SOURCE_TYPES = [
-  { type: 'image', label: 'Image', icon: ImageIcon, accept: 'image/jpeg,image/png' },
-  { type: 'video', label: 'Video', icon: Film, accept: 'video/mp4,video/webm,video/quicktime' },
+  { type: 'image', label: 'Image', icon: ImageIcon, accept: IMAGE_ACCEPT },
+  { type: 'video', label: 'Video', icon: Film, accept: VIDEO_ACCEPT },
   { type: 'stream', label: 'Live Stream', icon: Radio, accept: null },
 ]
 
@@ -37,13 +38,13 @@ export function SourcePanel({ source, onSourceChange, onError }) {
       return
     }
 
-    if (pendingType === 'image' && !file.type.startsWith('image/')) {
-      onError?.('Please select a JPEG or PNG image.')
+    if (pendingType === 'image' && !isImageFile(file)) {
+      onError?.('Please select a supported image (JPEG, PNG, WebP, GIF, BMP, or AVIF).')
       setPendingType(null)
       return
     }
-    if (pendingType === 'video' && !file.type.startsWith('video/')) {
-      onError?.('Please select an MP4, WebM, or MOV video.')
+    if (pendingType === 'video' && !isVideoFile(file)) {
+      onError?.('Please select a supported video (MP4, WebM, MOV, MKV, or AVI).')
       setPendingType(null)
       return
     }
@@ -109,8 +110,8 @@ export function SourcePanel({ source, onSourceChange, onError }) {
           type="file"
           accept={
             pendingType === 'image'
-              ? 'image/jpeg,image/png'
-              : 'video/mp4,video/webm,video/quicktime'
+              ? IMAGE_ACCEPT
+              : VIDEO_ACCEPT
           }
           onChange={handleFileChange}
           className="hidden"
