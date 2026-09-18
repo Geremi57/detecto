@@ -59,6 +59,8 @@ async def detect_people(
 
     image = image.convert("RGB")
 
+    image_width, image_height = image.size
+
     result = detector.detect(image)
 
     record = DetectionRecord(
@@ -72,7 +74,9 @@ async def detect_people(
     db.commit()
 
     return DetectionResult(
-        filename=file.filename,
+       filename=file.filename,
         timestamp=datetime.now(timezone.utc),
+        image_width=image_width,
+        image_height=image_height,
         **result,
     )
