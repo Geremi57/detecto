@@ -7,6 +7,10 @@ from datetime import datetime, timezone
 from app.database import SessionLocal
 from app.models.record import DetectionRecord
 
+from io import BytesIO
+from PIL import Image
+from unittest.mock import patch
+
 
 client = TestClient(app)
 
@@ -74,3 +78,44 @@ def test_get_history_rejects_negative_offset():
     )
 
     assert response.status_code == 422
+
+
+def test_detection_history_reset_flow():
+    image = Image.new("RGB", (100, 100), "white")
+    buffer = BytesIO()
+    image.save(buffer, format="JPEG")
+
+    mock_result = {
+        "count": 2,
+        "average_confidence": 0.88,
+        "inference_time_ms": 150.0,
+        "detections": [],
+    }
+
+    with patch(
+        "app.routes.detect.detector.detect",
+        return_value=mock_result,
+    ):
+        response = client.post(
+            "/detect",
+            files={
+                "file": (
+                    "integration.jpg",
+                    buffer.getvalue(),
+                    "image/jpeg",
+                )
+            },
+        )
+
+    assert response.status_code == 200
+
+    history = client.get("/history")
+    assert history.status_code == 200
+    assert len(history.json()) >= 1
+
+    reset = client.delete("/history/reset")
+    assert reset.status_code == 200
+
+    history = client.get("/history")
+    assert history.status_code == 200
+    assert history.json() == []
