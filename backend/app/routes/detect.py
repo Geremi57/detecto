@@ -66,7 +66,13 @@ async def detect_people(
 
     image_width, image_height = image.size
 
-    result = detector.detect(image)
+    try:
+        result = detector.detect(image)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail="Person detection failed.",
+        ) from exc
 
     annotated_image = draw_detections(
     image,
