@@ -1,71 +1,30 @@
-import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react'
+import { createContext, useContext, useState, useCallback, useMemo } from 'react'
 
 const DetectionContext = createContext(null)
 
+/**
+ * Holds only real, live state for the current session:
+ * - the active media source (image / video / webcam stream)
+ * - the latest detection result from POST /detect
+ * - connection + processing status
+ * No mock data, no fake FPS counters, no WebSocket feed (the backend API is HTTP-based).
+ */
 export function DetectionProvider({ children }) {
-  const [counts, setCounts] = useState({})
-  const [logs, setLogs] = useState([])
-  const [metrics, setMetrics] = useState({
-    total: 0,
-    avgConfidence: 0,
-    fps: 0,
-    latency: 0,
-    memory: 0,
-    totalTrend: 0,
-    confidenceTrend: 0,
-    fpsTrend: 0,
-    latencyTrend: 0,
-    latencyHistory: [],
-    fpsHistory: [],
-    memoryHistory: [],
-  })
+  const [source, setSource] = useState(null) // { type: 'image'|'video'|'stream', ... }
+  const [result, setResult] = useState(null) // latest POST /detect response
+  const [apiStatus, setApiStatus] = useState('disconnected') // disconnected | connected
 
-  const updateCounts = useCallback((newCounts) => {
-    setCounts(newCounts)
-  }, [])
+  const updateResult = useCallback((r) => setResult(r), [])
+  const setConnection = useCallback((status) => setApiStatus(status), [])
 
-  const addLog = useCallback((log) => {
-    setLogs(prev => [...prev.slice(-999), log])
-  }, [])
-
-  const updateMetrics = useCallback((newMetrics) => {
-    setMetrics(prev => ({
-      ...prev,
-      ...newMetrics,
-      latencyHistory: newMetrics.latencyHistory ? [...prev.latencyHistory.slice(-59), ...newMetrics.latencyHistory] : prev.latencyHistory,
-      fpsHistory: newMetrics.fpsHistory ? [...prev.fpsHistory.slice(-59), ...newMetrics.fpsHistory] : prev.fpsHistory,
-      memoryHistory: newMetrics.memoryHistory ? [...prev.memoryHistory.slice(-59), ...newMetrics.memoryHistory] : prev.memoryHistory,
-    }))
-  }, [])
-
-  const reset = useCallback(() => {
-    setCounts({})
-    setLogs([])
-    setMetrics({
-      total: 0,
-      avgConfidence: 0,
-      fps: 0,
-      latency: 0,
-      memory: 0,
-      totalTrend: 0,
-      confidenceTrend: 0,
-      fpsTrend: 0,
-      latencyTrend: 0,
-      latencyHistory: [],
-      fpsHistory: [],
-      memoryHistory: [],
-    })
-  }, [])
-
-  const value = {
-    counts,
-    logs,
-    metrics,
-    updateCounts,
-    addLog,
-    updateMetrics,
-    reset,
-  }
+  const value = useMemo(() => ({
+    source,
+    setSource,
+    result,
+    updateResult,
+    apiStatus,
+    setConnection,
+  }), [source, result, apiStatus, updateResult, setConnection])
 
   return (
     <DetectionContext.Provider value={value}>
@@ -80,4 +39,14 @@ export function useDetection() {
     throw new Error('useDetection must be used within a DetectionProvider')
   }
   return context
+}
+
+export function useSource() {
+  const { source, setSource } = useDetection()
+  return { source, setSource }
+}
+
+export function useConnectionStatus() {
+  const { apiStatus, setConnection } = useDetection()
+  return { apiStatus, setConnection }
 }

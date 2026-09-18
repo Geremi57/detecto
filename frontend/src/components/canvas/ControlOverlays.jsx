@@ -1,20 +1,13 @@
-import { useState } from 'react'
 import { ChevronDown, ChevronUp, SlidersHorizontal } from 'lucide-react'
+import { useState } from 'react'
 
 const toggleGroups = {
   detection: [
     { key: 'showBoxes', label: 'Bounding Boxes', description: 'Draw detection rectangles' },
-    { key: 'showLabels', label: 'Class Labels', description: 'Show object class names' },
+    { key: 'showLabels', label: 'Labels', description: 'Show the person label' },
     { key: 'showConfidence', label: 'Confidence Scores', description: 'Display detection confidence %' },
   ],
-  tracking: [
-    { key: 'showTrails', label: 'Tracking Trails', description: 'Show object movement paths' },
-    { key: 'trailLength', label: 'Trail Length', type: 'range', min: 10, max: 100, step: 5, description: 'Trail history duration (frames)' },
-    { key: 'trailOpacity', label: 'Trail Opacity', type: 'range', min: 0.1, max: 1, step: 0.1, description: 'Trail fade intensity' },
-  ],
   display: [
-    { key: 'showFPS', label: 'FPS Counter', description: 'Show frames per second' },
-    { key: 'showGrid', label: 'Reference Grid', description: 'Show coordinate grid overlay' },
     { key: 'boxThickness', label: 'Box Thickness', type: 'range', min: 1, max: 5, step: 1, description: 'Bounding box line width' },
     { key: 'fontSize', label: 'Label Font Size', type: 'range', min: 10, max: 18, step: 1, description: 'Text label size' },
   ],
@@ -23,7 +16,6 @@ const toggleGroups = {
 export function ControlOverlays({ options, onChange }) {
   const [expandedGroups, setExpandedGroups] = useState({
     detection: true,
-    tracking: true,
     display: false,
   })
 
@@ -110,13 +102,8 @@ export function ControlOverlays({ options, onChange }) {
               onChange('showBoxes', true)
               onChange('showLabels', true)
               onChange('showConfidence', true)
-              onChange('showTrails', false)
-              onChange('showFPS', true)
-              onChange('showGrid', false)
               onChange('boxThickness', 2)
               onChange('fontSize', 12)
-              onChange('trailLength', 30)
-              onChange('trailOpacity', 0.6)
             }}
             className="btn-ghost text-xs flex-1 py-1.5"
           >
