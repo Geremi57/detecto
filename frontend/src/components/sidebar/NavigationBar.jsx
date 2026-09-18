@@ -1,11 +1,8 @@
-import { LayoutDashboard, Video, BarChart3, Settings, Info, Zap } from 'lucide-react'
+import { LayoutDashboard, BarChart3, Info } from 'lucide-react'
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'stream', label: 'Camera Feed', icon: Video },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-  { id: 'logs', label: 'System Logs', icon: Zap },
-  { id: 'settings', label: 'Settings', icon: Settings },
 ]
 
 export function NavigationBar({ activeTab, onTabChange, className = '' }) {
