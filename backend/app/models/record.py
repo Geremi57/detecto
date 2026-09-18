@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import DateTime, Float, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -61,5 +61,4 @@ class DetectionHistory(BaseModel):
     average_confidence: float = Field(ge=0, le=1)
     inference_time_ms: float = Field(ge=0)
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
