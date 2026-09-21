@@ -7,7 +7,7 @@ import { Image as ImageIcon, Film, Maximize2, Minimize2, AlertTriangle, Camera, 
  * detection boxes overlaid via canvas. Exposes the video element to the
  * detection loop via `videoElRef` so frames can be sampled for POST /detect.
  */
-export function StreamViewport({ source, detections, annotatedImageUrl, overlayOptions, videoElRef, detecting, onDetectToggle, onError, className = '' }) {
+export function StreamViewport({ source, detections,  detectionDimensions,annotatedImageUrl, overlayOptions, videoElRef, detecting, onDetectToggle, onError, className = '' }) {
   const containerRef = useRef(null)
   const localVideoRef = useRef(null)
   const canvasRef = useRef(null)
@@ -21,7 +21,14 @@ export function StreamViewport({ source, detections, annotatedImageUrl, overlayO
     if (videoElRef) videoElRef.current = localVideoRef.current
   }, [videoElRef])
 
-  const { resizeCanvas } = useCanvasRenderer(videoRef, canvasRef, detections, overlayOptions)
+
+  const { resizeCanvas } = useCanvasRenderer(
+  videoRef,
+  canvasRef,
+  detections,
+  overlayOptions,
+  detectionDimensions
+)
 
   const isImage = source?.type === 'image'
   const isVideo = source?.type === 'video'
