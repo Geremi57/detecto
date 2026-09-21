@@ -167,15 +167,19 @@ function Dashboard() {
           <div className="space-y-6 min-h-0">
             <div className="relative aspect-video bg-detecto-bgCard border border-detecto-border rounded-xl overflow-hidden">
               <StreamViewport
-                source={source}
-                detections={result?.detections || []}
-                annotatedImageUrl={source?.type === 'image' ? result?.annotated_image : null}
-                overlayOptions={overlayOptions}
-                videoElRef={videoRef}
-                detecting={detecting}
-                onDetectToggle={handleDetectToggle}
-                onError={showToast}
-              />
+  source={source}
+  detections={result?.detections || []}
+  detectionDimensions={{
+    width: result?.image_width,
+    height: result?.image_height,
+  }}
+  annotatedImageUrl={source?.type === 'image' ? result?.annotated_image : null}
+  overlayOptions={overlayOptions}
+  videoElRef={videoRef}
+  detecting={detecting}
+  onDetectToggle={handleDetectToggle}
+  onError={showToast}
+/>
               <ControlOverlays options={overlayOptions} onChange={handleOverlayChange} />
             </div>
 
