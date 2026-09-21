@@ -6,7 +6,7 @@ import { useRef, useEffect, useCallback, useLayoutEffect } from 'react'
  * accounting for letterboxing. Works with both video and image sources by
  * measuring the media element's intrinsic size (videoWidth or naturalWidth).
  */
-export function useCanvasRenderer(mediaRef, canvasRef, detections, options = {}) {
+export function useCanvasRenderer(mediaRef, canvasRef, detections, options = {}, detectionDimensions = null) {
   const {
     showBoxes = true,
     showLabels = true,
@@ -21,6 +21,9 @@ export function useCanvasRenderer(mediaRef, canvasRef, detections, options = {})
   optionsRef.current = options
   const detectionsRef = useRef(detections)
   detectionsRef.current = detections
+
+  const detectionDimensionsRef = useRef(detectionDimensions)
+detectionDimensionsRef.current = detectionDimensions
 
   const resizeCanvas = useCallback(() => {
     const media = mediaRef.current
@@ -114,11 +117,24 @@ export function useCanvasRenderer(mediaRef, canvasRef, detections, options = {})
     if (!boxes || !currentDetections?.length) return
     const { scaleX, scaleY } = transformRef.current
 
+const detectionDimensions = detectionDimensionsRef.current
+
+const detectionWidth = detectionDimensions?.width || mediaRef.current?.videoWidth
+const detectionHeight = detectionDimensions?.height || mediaRef.current?.videoHeight
+
+const detectionScaleX = detectionWidth
+  ? (mediaRef.current.videoWidth / detectionWidth) * scaleX
+  : scaleX
+
+const detectionScaleY = detectionHeight
+  ? (mediaRef.current.videoHeight / detectionHeight) * scaleY
+  : scaleY
+
     currentDetections.forEach((det) => {
-      const x = det.x1 * scaleX
-      const y = det.y1 * scaleY
-      const w = (det.x2 - det.x1) * scaleX
-      const h = (det.y2 - det.y1) * scaleY
+     const x = det.x1 * detectionScaleX
+const y = det.y1 * detectionScaleY
+const w = (det.x2 - det.x1) * detectionScaleX
+const h = (det.y2 - det.y1) * detectionScaleY
       const color = '#00FF88'
 
       ctx.strokeStyle = color
