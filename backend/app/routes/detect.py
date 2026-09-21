@@ -1,7 +1,8 @@
 from datetime import datetime, timezone
 from io import BytesIO
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+
 from PIL import Image, UnidentifiedImageError
 
 from app.models.record import DetectionResult
@@ -31,6 +32,7 @@ ALLOWED_CONTENT_TYPES = {
 @router.post("", response_model=DetectionResult)
 async def detect_people(
     file: UploadFile = File(...),
+    annotate: bool = Form(True),
     db: Session = Depends(get_db),
 ):
     if not file.filename:
@@ -74,17 +76,20 @@ async def detect_people(
             detail="Person detection failed.",
         ) from exc
 
-    annotated_image = draw_detections(
-    image,
-    result["detections"],
-)
+        encoded_image = None
 
-    buffer = BytesIO()
-    annotated_image.save(buffer, format="JPEG")
+    if annotate:
+        annotated_image = draw_detections(
+            image,
+            result["detections"],
+        )
 
-    encoded_image = base64.b64encode(
-        buffer.getvalue()
-    ).decode("utf-8")
+        buffer = BytesIO()
+        annotated_image.save(buffer, format="JPEG")
+
+        encoded_image = base64.b64encode(
+            buffer.getvalue()
+        ).decode("utf-8")
 
     record = DetectionRecord(
         timestamp=datetime.now(timezone.utc),
@@ -101,6 +106,10 @@ async def detect_people(
         timestamp=datetime.now(timezone.utc),
         image_width=image_width,
         image_height=image_height,
-        annotated_image=f"data:image/jpeg;base64,{encoded_image}",
+        annotated_image=(
+            f"data:image/jpeg;base64,{encoded_image}"
+            if encoded_image
+            else None
+        ),
         **result,
     )
