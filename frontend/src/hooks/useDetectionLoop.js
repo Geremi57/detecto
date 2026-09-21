@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { detectImage, blobToFile } from '../lib/api'
 import { convertToUploadableImage } from '../lib/mediaFormats'
 
-const DEFAULT_INTERVAL_MS = 1000 // sample one frame per second
+const DEFAULT_INTERVAL_MS = 500 // sample one frame per second
 
 /**
  * Runs person detection against the real POST /detect endpoint.
@@ -92,19 +92,63 @@ export function useDetectionLoop({ intervalMs = DEFAULT_INTERVAL_MS, onHistoryCh
     setRunning(true)
 
     try {
-      const canvas = document.createElement('canvas')
-      canvas.width = video.videoWidth
-      canvas.height = video.videoHeight
-      const ctx = canvas.getContext('2d')
-      ctx.drawImage(video, 0, 0)
+      const captureStart = performance.now()
 
-      const blob = await new Promise((resolve, reject) => {
-        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Failed to capture frame'))), 'image/jpeg', 0.85)
-      })
+const MAX_DETECTION_WIDTH = 640
+
+const scale = Math.min(1, MAX_DETECTION_WIDTH / video.videoWidth)
+
+const canvas = document.createElement('canvas')
+canvas.width = Math.round(video.videoWidth * scale)
+canvas.height = Math.round(video.videoHeight * scale)
+
+const ctx = canvas.getContext('2d')
+ctx.drawImage(
+  video,
+  0,
+  0,
+  canvas.width,
+  canvas.height
+)
+
+const drawTime = performance.now() - captureStart
+
+const blobStart = performance.now()
+
+const blob = await new Promise((resolve, reject) => {
+  canvas.toBlob(
+    (b) => (b ? resolve(b) : reject(new Error('Failed to capture frame'))),
+    'image/jpeg',
+    0.85
+  )
+})
+
+const encodeTime = performance.now() - blobStart
+
+console.log({
+  videoResolution: `${video.videoWidth}x${video.videoHeight}`,
+  drawTime: Math.round(drawTime),
+  encodeTime: Math.round(encodeTime),
+})
 
       const file = await blobToFile(blob, `frame-${Date.now()}.jpg`)
-      const response = await detectImage(file, controller.signal)
-      applyResponse(response, epoch)
+      const requestStart = performance.now()
+
+const response = await detectImage(file, controller.signal)
+
+console.log({
+  detectionImage: `${response.image_width}x${response.image_height}`,
+  firstDetection: response.detections?.[0],
+})
+
+const roundTripMs = performance.now() - requestStart
+
+console.log({
+  inferenceMs: response.inference_time_ms,
+  roundTripMs: Math.round(roundTripMs),
+})
+
+applyResponse(response, epoch)
     } catch (err) {
       if (err.name !== 'AbortError') {
         setError(err.message || 'Detection request failed')
