@@ -24,9 +24,10 @@ async function request(path, options = {}) {
  * (lib/mediaFormats.js) first for any other format.
  * Returns { filename, count, average_confidence, inference_time_ms, detections, timestamp, image_width, image_height, annotated_image }
  */
-export async function detectImage(file, signal) {
+export async function detectImage(file, signal, annotate = true) {
   const form = new FormData()
   form.append('file', file, file.name || 'capture.jpg')
+  form.append('annotate', String(annotate))
 
   return request('/detect', {
     method: 'POST',
