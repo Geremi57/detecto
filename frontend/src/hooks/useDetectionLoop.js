@@ -3,6 +3,9 @@ import { detectImage, blobToFile } from '../lib/api'
 import { convertToUploadableImage } from '../lib/mediaFormats'
 
 const DEFAULT_INTERVAL_MS = 500 // sample one frame per second
+const MAX_DETECTION_WIDTH = 640
+
+
 
 /**
  * Runs person detection against the real POST /detect endpoint.
@@ -14,9 +17,13 @@ const DEFAULT_INTERVAL_MS = 500 // sample one frame per second
  *
  * All data comes from the real API — no mock or hardcoded values.
  */
+
 export function useDetectionLoop({ intervalMs = DEFAULT_INTERVAL_MS, onHistoryChange } = {}) {
   const [active, setActive] = useState(false)
+
+  const [detecting, setDetecting] = useState(false)
   const [running, setRunning] = useState(false)
+
   const [error, setError] = useState(null)
   const [result, setResult] = useState(null)
   const [stats, setStats] = useState({
@@ -27,6 +34,11 @@ export function useDetectionLoop({ intervalMs = DEFAULT_INTERVAL_MS, onHistoryCh
     inferenceTimeMs: 0,
     history: [], // { time, value } person counts for the session chart
   })
+
+  
+  const socketRef = useRef(null)
+  const socketPendingRef = useRef(false)
+
 
   const videoRef = useRef(null)
   const timerRef = useRef(null)
@@ -75,6 +87,105 @@ export function useDetectionLoop({ intervalMs = DEFAULT_INTERVAL_MS, onHistoryCh
     onHistoryChangeRef.current?.()
   }, [])
 
+
+  const connectDetectionSocket = () => {
+  return new Promise((resolve, reject) => {
+    const socket = new WebSocket('ws://localhost:8000/detect/stream')
+
+    socket.onopen = () => {
+      socketRef.current = socket
+      resolve(socket)
+    }
+
+    socket.onerror = () => {
+      reject(new Error('Detection WebSocket connection failed'))
+    }
+
+    socket.onclose = () => {
+      if (socketRef.current === socket) {
+        socketRef.current = null
+      }
+    }
+  })
+}
+
+
+
+const detectCurrentFrameViaSocket = async () => {
+  if (socketPendingRef.current) return
+
+  const video = videoRef.current
+  const socket = socketRef.current
+  const epoch = epochRef.current
+
+  if (!video || video.readyState < 2 || !socket || socket.readyState !== WebSocket.OPEN) {
+    return
+  }
+
+  socketPendingRef.current = true
+
+  try {
+    const canvas = document.createElement('canvas')
+
+    const scale = Math.min(1, MAX_DETECTION_WIDTH / video.videoWidth)
+
+    canvas.width = Math.round(video.videoWidth * scale)
+    canvas.height = Math.round(video.videoHeight * scale)
+
+    const context = canvas.getContext('2d')
+
+    context.drawImage(
+      video,
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    )
+
+    const blob = await new Promise((resolve) => {
+      canvas.toBlob(resolve, 'image/jpeg', 0.8)
+    })
+
+    if (!blob) {
+      return
+    }
+
+    const resultPromise = new Promise((resolve, reject) => {
+      const handleMessage = (event) => {
+        socket.removeEventListener('message', handleMessage)
+
+        try {
+          resolve(JSON.parse(event.data))
+        } catch (error) {
+          reject(error)
+        }
+      }
+
+      socket.addEventListener('message', handleMessage, { once: true })
+    })
+
+    socket.send(blob)
+
+    const result = await resultPromise
+
+    if (result.error) {
+      throw new Error(result.error)
+    }
+
+    applyResponse({
+      ...result,
+      filename: 'stream-frame.jpg',
+      timestamp: new Date().toISOString(),
+      annotated_image: null,
+    },
+  epoch)
+  } catch (error) {
+    console.error('WebSocket detection failed:', error)
+  } finally {
+    socketPendingRef.current = false
+  }
+}
+
   const detectCurrentFrame = useCallback(async () => {
     const video = videoRef.current
     if (!video) return
@@ -94,7 +205,6 @@ export function useDetectionLoop({ intervalMs = DEFAULT_INTERVAL_MS, onHistoryCh
     try {
       const captureStart = performance.now()
 
-const MAX_DETECTION_WIDTH = 640
 
 const scale = Math.min(1, MAX_DETECTION_WIDTH / video.videoWidth)
 
@@ -200,30 +310,63 @@ applyResponse(response, epoch)
     }
   }, [applyResponse])
 
-  const start = useCallback(() => {
-    if (runningRef.current) return
-    runningRef.current = true
-    setActive(true)
-    setRunning(true)
-    timerRef.current = setInterval(detectCurrentFrame, intervalMs)
-    detectCurrentFrame()
-  }, [detectCurrentFrame, intervalMs])
+ const start = useCallback(async () => {
+  if (detecting) return
 
-  const stop = useCallback(() => {
-    runningRef.current = false
-    setActive(false)
-    setRunning(false)
-    if (timerRef.current) {
-      clearInterval(timerRef.current)
-      timerRef.current = null
+  setDetecting(true)
+
+  console.log('START: setting detecting TRUE')
+  setError(null)
+
+  try {
+    const socket = await connectDetectionSocket()
+
+    if (!socketRef.current) {
+      socket.close()
+      setDetecting(false)
+      return
     }
-    // Invalidate any in-flight request and clear the bounding boxes so a
-    // stopped session can't keep painting stale detections on the video.
-    epochRef.current += 1
-    abortRef.current?.abort()
-    abortRef.current = null
-    setResult(null)
-  }, [])
+
+    await detectCurrentFrameViaSocket()
+
+    timerRef.current = setInterval(
+      detectCurrentFrameViaSocket,
+      intervalMs
+    )
+  } catch (err) {
+    console.error('Failed to start detection:', err)
+    setError(err.message || 'Failed to start detection')
+    setDetecting(false)
+  }
+}, [detecting, intervalMs])
+
+ const stop = useCallback(() => {
+  runningRef.current = false
+
+  setDetecting(false)
+  setRunning(false)
+
+  if (timerRef.current) {
+    clearInterval(timerRef.current)
+    timerRef.current = null
+  }
+
+  // Close the detection WebSocket.
+  if (socketRef.current) {
+    socketRef.current.close()
+    socketRef.current = null
+  }
+
+  socketPendingRef.current = false
+
+  // Invalidate any in-flight request/response.
+  epochRef.current += 1
+
+  abortRef.current?.abort()
+  abortRef.current = null
+
+  setResult(null)
+}, [])
 
   const resetStats = useCallback(() => {
     // Discard any in-flight response so it can't pollute the fresh session.
@@ -248,19 +391,27 @@ applyResponse(response, epoch)
   }, [])
 
   // Stop the loop whenever the hook unmounts or the interval changes.
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current)
-        timerRef.current = null
-      }
-      runningRef.current = false
-      inFlightRef.current = false
-      epochRef.current += 1
-      abortRef.current?.abort()
-      abortRef.current = null
+ useEffect(() => {
+  return () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+      timerRef.current = null
     }
-  }, [])
+
+    if (socketRef.current) {
+      socketRef.current.close()
+      socketRef.current = null
+    }
+
+    socketPendingRef.current = false
+
+    runningRef.current = false
+    inFlightRef.current = false
+    epochRef.current += 1
+    abortRef.current?.abort()
+    abortRef.current = null
+  }
+}, [])
 
   useEffect(() => {
     if (runningRef.current && timerRef.current) {
@@ -271,7 +422,8 @@ applyResponse(response, epoch)
 
   return {
     videoRef,
-    active,
+    detecting,
+    // detecting: active,
     running,
     error,
     result,
