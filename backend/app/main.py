@@ -3,7 +3,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.database import Base, engine, get_db
-from app.routes import detect, history
+from app.routes import detect, history, stream
 
 Base.metadata.create_all(bind=engine)
 
@@ -15,6 +15,8 @@ app = FastAPI(
 
 app.include_router(detect.router)
 app.include_router(history.router)
+
+app.include_router(stream.router)
 
 @app.get("/health")
 def health_check(db: Session = Depends(get_db)):
