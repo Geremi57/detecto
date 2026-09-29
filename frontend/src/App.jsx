@@ -11,6 +11,8 @@ import { PerformanceSpark } from './components/charts/PerformanceSpark'
 import { getHistory, resetHistory, getHealth } from './lib/api'
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { Activity, Cpu, HardDrive } from 'lucide-react'
+// import { useEffect } from 'react'
+
 
 const HISTORY_PAGE_SIZE = 50
 
@@ -46,7 +48,8 @@ function Dashboard() {
 
   const {
     videoRef,
-    running: detecting,
+    detecting,
+    // running: detecting,
     error: detectionError,
     result,
     stats,
@@ -56,6 +59,8 @@ function Dashboard() {
     resetStats,
   } = useDetectionLoop({ onHistoryChange: refreshHistory })
 
+
+  console.log('APP detecting:', detecting)
   const showToast = useCallback((msg) => setToast(msg), [])
 
   // --- API health + history -------------------------------------------------
@@ -131,16 +136,77 @@ function Dashboard() {
     return () => clearTimeout(t)
   }, [toast])
 
-  const handleDetectToggle = useCallback(() => {
-    if (detecting) {
-      stop()
-    } else if (source) {
-      start()
-    }
-  }, [detecting, source, start, stop])
+ const handleDetectToggle = useCallback(() => {
+  if (detecting) {
+    stop()
+  } else if (source) {
+    start()
+  }
+}, [detecting, source, start, stop])
 
   const countHistory = stats.history
 
+
+  const testDetectionSocket = async () => {
+  const video = videoRef.current
+
+  if (!video || video.readyState < 2) {
+    console.log('Video is not ready')
+    return
+  }
+
+  const canvas = document.createElement('canvas')
+  const scale = Math.min(1, 640 / video.videoWidth)
+
+  canvas.width = Math.round(video.videoWidth * scale)
+  canvas.height = Math.round(video.videoHeight * scale)
+
+  const ctx = canvas.getContext('2d')
+
+  ctx.drawImage(
+    video,
+    0,
+    0,
+    canvas.width,
+    canvas.height,
+  )
+
+  const blob = await new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (value) =>
+        value
+          ? resolve(value)
+          : reject(new Error('Frame capture failed')),
+      'image/jpeg',
+      0.8,
+    )
+  })
+
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  const host = window.location.hostname || 'localhost'
+
+  const socket = new WebSocket(
+    `${protocol}//${host}:8000/detect/stream`,
+  )
+
+  socket.onopen = () => {
+    console.log('Detection WebSocket connected')
+    socket.send(blob)
+  }
+
+  socket.onmessage = (event) => {
+    console.log(
+      'WebSocket detection result:',
+      JSON.parse(event.data),
+    )
+
+    socket.close()
+  }
+
+  socket.onerror = (error) => {
+    console.error('Detection WebSocket error:', error)
+  }
+}
   // --- layout ---------------------------------------------------------------
 
   return (
@@ -165,7 +231,14 @@ function Dashboard() {
       <main className="row-span-2 p-6 space-y-6 overflow-auto min-h-0">
         <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6 h-full">
           <div className="space-y-6 min-h-0">
+             <button
+  onClick={testDetectionSocket}
+  className="px-3 py-2 bg-detecto-accent text-detecto-bg rounded-lg text-sm"
+>
+  Test WebSocket Detection
+</button>
             <div className="relative aspect-video bg-detecto-bgCard border border-detecto-border rounded-xl overflow-hidden">
+             
               <StreamViewport
   source={source}
   detections={result?.detections || []}
